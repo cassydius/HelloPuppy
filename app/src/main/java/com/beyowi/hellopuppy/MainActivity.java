@@ -61,6 +61,7 @@ public class MainActivity extends ActionBarActivity {
     ProgressDialog mDialog;
     Integer orientation;
     Configuration config;
+    ConnectivityManager connecManager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -92,6 +93,8 @@ public class MainActivity extends ActionBarActivity {
         //Set shared preferences
         mSharedPreferences = getSharedPreferences(PREFS, MODE_PRIVATE);
 
+        connecManager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+
         //Load image
         checkCache();
     }
@@ -112,7 +115,7 @@ public class MainActivity extends ActionBarActivity {
             displayPhoto(source);
         } else {
             //Check internet connection
-            if (checkInternetAvailable()){
+            if (checkInternetAvailable(connecManager)){
                 //Get new image
                 getPhotosList();
             } else {
@@ -121,8 +124,7 @@ public class MainActivity extends ActionBarActivity {
         };
     }
 
-    public boolean checkInternetAvailable() {
-        ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+    public boolean checkInternetAvailable(ConnectivityManager cm) {
         NetworkInfo ni = cm.getActiveNetworkInfo();
         return ni != null && ni.isConnectedOrConnecting();
     }
@@ -258,7 +260,6 @@ public class MainActivity extends ActionBarActivity {
     }
 
     public void displayPhoto(String source){
-        Log.d("DISPLAY IMAGE SOURCE", source);
         Picasso picasso = Picasso.with(this);
         picasso.setDebugging(true);
         Picasso.with(this).load(source).into(imageMain, new Callback.EmptyCallback(){
