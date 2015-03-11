@@ -1,6 +1,8 @@
 package com.beyowi.hellopuppy;
 
+import android.app.AlarmManager;
 import android.app.AlertDialog;
+import android.app.PendingIntent;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -30,12 +32,14 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.io.File;
+import java.util.Calendar;
+import java.util.Date;
 
 
 public class MainActivity extends ActionBarActivity {
 
     //DEBUG
-    private static final Boolean FORCE_DOWNLOAD = Boolean.TRUE;
+    private static final Boolean FORCE_DOWNLOAD = Boolean.FALSE;
 
     // API constants
     private static final String API_KEY = "4bc55852a8f873978d26832b8cc4f5aa";
@@ -45,6 +49,7 @@ public class MainActivity extends ActionBarActivity {
     private static final String MEDIA_TYPE = "photos";
     private static final String FORMAT = "&format=json&nojsoncallback=?";
     private static final String PER_PAGE = "10";
+    private static final String EXTRAS = "&extras=owner_name,description,url_sq,url_t,url_s,url_q,url_m,url_n,url_z,url_c,url_l,url_o";
 
     //PICASSO
     private static final String PICASSO_CACHE = "picasso-cache";
@@ -53,7 +58,11 @@ public class MainActivity extends ActionBarActivity {
     private static final String PREFS = "photoInfo";
     private static final String PORTRAIT_SOURCE = "portraitSource";
     private static final String LANDSCAPE_SOURCE = "landscapeSource";
+    private static final String RENEWAL_DATE = "renewalDate";
     SharedPreferences mSharedPreferences;
+
+    //OTHER CONSTANTS
+    private static final Integer validityTime = 2*60;
 
     ImageView imageMain;
     Point windowSize;
@@ -62,6 +71,7 @@ public class MainActivity extends ActionBarActivity {
     Integer orientation;
     Configuration config;
     ConnectivityManager connecManager;
+    Calendar cal;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -79,7 +89,7 @@ public class MainActivity extends ActionBarActivity {
         } else {
             windowSize.x = defaultDisplay.getWidth();
             windowSize.y = defaultDisplay.getHeight();
-        };
+        }
 
         //Get orientation
         config = getResources().getConfiguration();
@@ -94,6 +104,7 @@ public class MainActivity extends ActionBarActivity {
         mSharedPreferences = getSharedPreferences(PREFS, MODE_PRIVATE);
 
         connecManager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+        cal = Calendar.getInstance();
 
         //Load image
         checkCache();
@@ -110,10 +121,18 @@ public class MainActivity extends ActionBarActivity {
         } else {
             source = mSharedPreferences.getString(LANDSCAPE_SOURCE, "");
         }
-        if ((source.length() > 0)&&(!FORCE_DOWNLOAD)) {
+        //Get renewal date
+        long longDate = mSharedPreferences.getLong(RENEWAL_DATE, 0L);
+        Date renewalDate = new Date(longDate);
+        //Get now date
+        Date now = cal.getTime();
+        if ((source.length() > 0) && ((renewalDate != null)&&(now.before(renewalDate))) && (!FORCE_DOWNLOAD)) {
             //Load image in cache
             displayPhoto(source);
         } else {
+            //Clear old datas
+            clearCache(getBaseContext());
+            clearPreferences();
             //Check internet connection
             if (checkInternetAvailable(connecManager)){
                 //Get new image
@@ -121,7 +140,7 @@ public class MainActivity extends ActionBarActivity {
             } else {
                 createNetErrorDialog();
             }
-        };
+        }
     }
 
     public boolean checkInternetAvailable(ConnectivityManager cm) {
@@ -159,7 +178,7 @@ public class MainActivity extends ActionBarActivity {
 
         /* TODO GET A RANDOM LIST */
         String urlString = LIST_QUERY_URL + "&api_key=" + API_KEY + "&media=" + MEDIA_TYPE + "&tags=" + SUBJECT +
-                "&per_page=" + PER_PAGE + FORMAT;
+                "&per_page=" + PER_PAGE + EXTRAS + FORMAT;
 
         client.get(urlString, new JsonHttpResponseHandler() {
             @Override
@@ -227,36 +246,52 @@ public class MainActivity extends ActionBarActivity {
             Integer photoWidth = photo.optInt("width");
             Integer photoHeight = photo.optInt("height");
 
-            if (orientation == config.ORIENTATION_PORTRAIT) {
+            if (orientation == Configuration.ORIENTATION_PORTRAIT) {
                 if ((photoWidth < windowSize.x) && (photoHeight < windowSize.y)) {
                     source = portraitSource = photo.optString("source");
                 }
-                ;
                 if ((photoWidth < windowSize.y) && (photoHeight < windowSize.x)) {
                     landscapeSource = photo.optString("source");
                 }
-                ;
             } else {
                 if ((photoWidth < windowSize.x) && (photoHeight < windowSize.y)) {
                     source = landscapeSource = photo.optString("source");
                 }
-                ;
                 if ((photoWidth < windowSize.y) && (photoHeight < windowSize.x)) {
                     portraitSource = photo.optString("source");
                 }
-                ;
             }
-        };
+        }
         Log.d("SCREENSIZE", windowSize.x + ", " + windowSize.y);
         Log.d("SOURCE_PHOTO", portraitSource + "," + landscapeSource);
 
+        //Get renewal Date
+        cal.add(Calendar.SECOND, validityTime);
+        Date renewalDate = cal.getTime();
+
+        savePreferences(portraitSource, landscapeSource, renewalDate);
+        startAlarm(renewalDate);
+        displayPhoto(source);
+    }
+
+    public void savePreferences(String portraitSource, String landscapeSource, Date renewalDate){
         // Access the device's key-value storage and save sources
         SharedPreferences.Editor editor = mSharedPreferences.edit();
         editor.putString(PORTRAIT_SOURCE, portraitSource);
         editor.putString(LANDSCAPE_SOURCE, landscapeSource);
+        editor.putLong(RENEWAL_DATE, renewalDate.getTime());
         editor.commit();
+    }
 
-        displayPhoto(source);
+    private void startAlarm(Date renewalDate) {
+        AlarmManager alarmManager = (AlarmManager) this.getSystemService(Context.ALARM_SERVICE);
+        Calendar calendar =  Calendar.getInstance();
+        calendar.setTime(renewalDate);
+        long when = calendar.getTimeInMillis();         // notification time
+        Intent intent = new Intent(this, ReminderService.class);
+        PendingIntent pendingIntent = PendingIntent.getBroadcast(this, 0, intent, 0);
+        Log.i("DEBUG DATES", when + " RENEW " + renewalDate.toString());
+        alarmManager.set(AlarmManager.RTC, when, pendingIntent);
     }
 
     public void displayPhoto(String source){
