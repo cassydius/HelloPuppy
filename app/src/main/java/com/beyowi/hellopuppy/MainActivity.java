@@ -34,6 +34,7 @@ import org.json.JSONObject;
 import java.io.File;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.Iterator;
 
 
 public class MainActivity extends ActionBarActivity {
@@ -44,12 +45,16 @@ public class MainActivity extends ActionBarActivity {
     // API constants
     private static final String API_KEY = "4bc55852a8f873978d26832b8cc4f5aa";
     private static final String LIST_QUERY_URL = "https://api.flickr.com/services/rest/?method=flickr.photos.search";
-    private static final String GET_QUERY_URL = "https://api.flickr.com/services/rest/?method=flickr.photos.getSizes";
     private static final String SUBJECT = "puppy";
     private static final String MEDIA_TYPE = "photos";
     private static final String FORMAT = "&format=json&nojsoncallback=?";
     private static final String PER_PAGE = "10";
     private static final String EXTRAS = "&extras=owner_name,description,url_sq,url_t,url_s,url_q,url_m,url_n,url_z,url_c,url_l,url_o";
+
+    // API keys naming convention
+    private static final String URL_PREFIX = "url";
+    private static final String HEIGHT = "height";
+    private static final String WIDTH = "width";
 
     //PICASSO
     private static final String PICASSO_CACHE = "picasso-cache";
@@ -183,7 +188,15 @@ public class MainActivity extends ActionBarActivity {
         client.get(urlString, new JsonHttpResponseHandler() {
             @Override
             public void onSuccess(JSONObject jsonObject) {
-                getPhotoSizes(jsonObject);
+                //Select a photo and get the correct sources
+                PhotoData photoObj = getPhoto(jsonObject);
+                //Get renewal Date
+                cal.add(Calendar.SECOND, validityTime);
+                Date renewalDate = cal.getTime();
+
+                savePreferences(photoObj, renewalDate);
+                startAlarm(renewalDate);
+                displayPhoto(photoObj.source);
             }
 
             @Override
@@ -199,86 +212,35 @@ public class MainActivity extends ActionBarActivity {
         });
     }
 
-    public void getPhotoSizes(JSONObject PhotosObject){
+    public PhotoData getPhoto(JSONObject PhotosObject){
 
         JSONObject PhotoObject = PhotosObject.optJSONObject("photos");
         JSONArray photoList = PhotoObject.optJSONArray("photo");
 
         Integer position = (int) Math.floor( Math.random() * photoList.length());
         JSONObject photo = photoList.optJSONObject(position);
-        String photoId = photo.optString("id");
+        Log.d("APIRESULT", photo.toString());
+        Iterator<?> keys = photo.keys();
+        PhotoData photoObj = new PhotoData(orientation, windowSize.x, windowSize.y);
 
-        String urlString = GET_QUERY_URL + "&api_key=" + API_KEY + "&photo_id=" + photoId + FORMAT;
-        Log.d("GET PHOTO SIZE", urlString);
-        // Have the client get a JSONArray of data
-        // and define how to respond
-        client.get(urlString,
-                new JsonHttpResponseHandler() {
-
-                    @Override
-                    public void onSuccess(JSONObject jsonObject) {
-                        getPhoto(jsonObject);
-                    }
-
-                    @Override
-                    public void onFailure(int statusCode, Throwable throwable, JSONObject error) {
-                        // Display a "Toast" message
-                        // to announce the failure
-                        Toast.makeText(getApplicationContext(), "Error: " + statusCode + " " + throwable.getMessage(), Toast.LENGTH_LONG).show();
-
-                        // Log error message
-                        // to help solve any problems
-                        Log.e("GET_PHOTO", statusCode + " " + throwable.getMessage());
-                    }
-                });
-    }
-
-    public void getPhoto(JSONObject photoObject){
-        JSONObject jsonObject = photoObject.optJSONObject("sizes");
-        JSONArray photoSizes = jsonObject.optJSONArray("size");
-
-        String source = "";
-        String portraitSource = "";
-        String landscapeSource = "";
-
-        for (int i=0; i < photoSizes.length();i++) {
-            JSONObject photo = photoSizes.optJSONObject(i);
-            Integer photoWidth = photo.optInt("width");
-            Integer photoHeight = photo.optInt("height");
-
-            if (orientation == Configuration.ORIENTATION_PORTRAIT) {
-                if ((photoWidth < windowSize.x) && (photoHeight < windowSize.y)) {
-                    source = portraitSource = photo.optString("source");
-                }
-                if ((photoWidth < windowSize.y) && (photoHeight < windowSize.x)) {
-                    landscapeSource = photo.optString("source");
-                }
-            } else {
-                if ((photoWidth < windowSize.x) && (photoHeight < windowSize.y)) {
-                    source = landscapeSource = photo.optString("source");
-                }
-                if ((photoWidth < windowSize.y) && (photoHeight < windowSize.x)) {
-                    portraitSource = photo.optString("source");
-                }
+        while( keys.hasNext() ) {
+            String key = (String)keys.next();
+            if (key.startsWith(URL_PREFIX)) {
+                String suffix = key.replace(URL_PREFIX, "");
+                String url = photo.optString(key, "");
+                Integer height = photo.optInt(HEIGHT + suffix, 0);
+                Integer width = photo.optInt(WIDTH + suffix, 0);
+                photoObj.getSources(url, width, height);
             }
         }
-        Log.d("SCREENSIZE", windowSize.x + ", " + windowSize.y);
-        Log.d("SOURCE_PHOTO", portraitSource + "," + landscapeSource);
-
-        //Get renewal Date
-        cal.add(Calendar.SECOND, validityTime);
-        Date renewalDate = cal.getTime();
-
-        savePreferences(portraitSource, landscapeSource, renewalDate);
-        startAlarm(renewalDate);
-        displayPhoto(source);
+        return photoObj;
     }
 
-    public void savePreferences(String portraitSource, String landscapeSource, Date renewalDate){
+    public void savePreferences(PhotoData photo, Date renewalDate){
         // Access the device's key-value storage and save sources
         SharedPreferences.Editor editor = mSharedPreferences.edit();
-        editor.putString(PORTRAIT_SOURCE, portraitSource);
-        editor.putString(LANDSCAPE_SOURCE, landscapeSource);
+        editor.putString(PORTRAIT_SOURCE, photo.portraitSource);
+        editor.putString(LANDSCAPE_SOURCE, photo.landscapeSource);
         editor.putLong(RENEWAL_DATE, renewalDate.getTime());
         editor.commit();
     }
@@ -290,7 +252,6 @@ public class MainActivity extends ActionBarActivity {
         long when = calendar.getTimeInMillis();         // notification time
         Intent intent = new Intent(this, ReminderService.class);
         PendingIntent pendingIntent = PendingIntent.getBroadcast(this, 0, intent, 0);
-        Log.i("DEBUG DATES", when + " RENEW " + renewalDate.toString());
         alarmManager.set(AlarmManager.RTC, when, pendingIntent);
     }
 
