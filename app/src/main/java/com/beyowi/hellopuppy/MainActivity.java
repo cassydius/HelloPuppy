@@ -292,6 +292,8 @@ public class MainActivity extends ActionBarActivity {
                 return true;
             case R.id.action_settings:
                 return true;
+            case R.id.action_disclaimer:
+                displayDisclaimer();
             default:
                 return super.onOptionsItemSelected(item);
         }
@@ -311,7 +313,20 @@ public class MainActivity extends ActionBarActivity {
                     }});
         alert = builder.create();
         alert.show();
-        //Toast.makeText(getApplicationContext(), "Owner: " + owner + "\n" + "Title: " + title, Toast.LENGTH_LONG).show();
+    }
+
+    public void displayDisclaimer(){
+        AlertDialog alert;
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setMessage(getString(R.string.disclaimer_text))
+                .setTitle(getString(R.string.disclaimer))
+                .setCancelable(false)
+                .setPositiveButton(getString(R.string.close), new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int id) {
+                        dialog.dismiss();
+                    }});
+        alert = builder.create();
+        alert.show();
     }
 
     public void clearPreferences(){
