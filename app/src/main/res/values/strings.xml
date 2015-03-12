@@ -2,7 +2,24 @@
     <string name="app_name">HelloPuppy</string>
 
     <string name="hello_world">Hello world!</string>
-    <string name="action_settings">Settings</string>
+    <string name="settings">Settings</string>
+    <string name="loading_title">Here it comes</string>
+    //Menu
+    <string name="action_disclaimer">Disclaimer</string>
+    <string name="notification_title">Hello Puppy</string>
+    <string name="notification_desc">A new puppy says Hi !</string>
 
+    //Photo Credits
+    <string name="author">Author: </string>
+    <string name="title">Title: </string>
+    <string name="photo_credits">Photo Credits</string>
+    <string name="close">Close</string>
+
+    //Alert dialog
+    <string name="alert_title">Unable to connect</string>
+    <string name="connection_alert">You need a network connection to get a new puppy. Please turn on mobile network or Wi-Fi in Settings.</string>
+    <string name="cancel">Cancel</string>
+
+    //Color
     <color name="black">#000000</color>
 </resources>

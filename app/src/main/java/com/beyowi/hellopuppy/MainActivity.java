@@ -64,6 +64,8 @@ public class MainActivity extends ActionBarActivity {
     private static final String PORTRAIT_SOURCE = "portraitSource";
     private static final String LANDSCAPE_SOURCE = "landscapeSource";
     private static final String RENEWAL_DATE = "renewalDate";
+    private static final String OWNER = "ownername";
+    private static final String TITLE = "title";
     SharedPreferences mSharedPreferences;
 
     //OTHER CONSTANTS
@@ -102,7 +104,7 @@ public class MainActivity extends ActionBarActivity {
 
         //Set progress dialog
         mDialog = new ProgressDialog(this);
-        mDialog.setMessage("Wait, he is coming !");
+        mDialog.setMessage(getString(R.string.loading_title));
         mDialog.setCancelable(false);
 
         //Set shared preferences
@@ -121,7 +123,7 @@ public class MainActivity extends ActionBarActivity {
         mDialog.show();
         //Get saved sources
         String source;
-        if (orientation == config.ORIENTATION_PORTRAIT){
+        if (orientation == Configuration.ORIENTATION_PORTRAIT){
             source = mSharedPreferences.getString(PORTRAIT_SOURCE, "");
         } else {
             source = mSharedPreferences.getString(LANDSCAPE_SOURCE, "");
@@ -131,7 +133,7 @@ public class MainActivity extends ActionBarActivity {
         Date renewalDate = new Date(longDate);
         //Get now date
         Date now = cal.getTime();
-        if ((source.length() > 0) && ((renewalDate != null)&&(now.before(renewalDate))) && (!FORCE_DOWNLOAD)) {
+        if ((source.length() > 0) && (now.before(renewalDate)) && (!FORCE_DOWNLOAD)) {
             //Load image in cache
             displayPhoto(source);
         } else {
@@ -155,10 +157,10 @@ public class MainActivity extends ActionBarActivity {
 
     protected void createNetErrorDialog() {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setMessage("You need a network connection to get a new puppy. Please turn on mobile network or Wi-Fi in Settings.")
-                .setTitle("Unable to connect")
+        builder.setMessage(getString(R.string.connection_alert))
+                .setTitle(getString(R.string.alert_title))
                 .setCancelable(false)
-                .setPositiveButton("Settings",
+                .setPositiveButton(getString(R.string.settings),
                         new DialogInterface.OnClickListener() {
                             public void onClick(DialogInterface dialog, int id) {
                                 Intent i = new Intent(Settings.ACTION_SETTINGS);
@@ -166,7 +168,7 @@ public class MainActivity extends ActionBarActivity {
                             }
                         }
                 )
-                .setNegativeButton("Cancel",
+                .setNegativeButton(getString(R.string.cancel),
                         new DialogInterface.OnClickListener() {
                             public void onClick(DialogInterface dialog, int id) {
                                 MainActivity.this.finish();
@@ -222,6 +224,7 @@ public class MainActivity extends ActionBarActivity {
         Log.d("APIRESULT", photo.toString());
         Iterator<?> keys = photo.keys();
         PhotoData photoObj = new PhotoData(orientation, windowSize.x, windowSize.y);
+        photoObj.setCredits(photo.optString("ownername",""), photo.optString("title",""));
 
         while( keys.hasNext() ) {
             String key = (String)keys.next();
@@ -242,6 +245,8 @@ public class MainActivity extends ActionBarActivity {
         editor.putString(PORTRAIT_SOURCE, photo.portraitSource);
         editor.putString(LANDSCAPE_SOURCE, photo.landscapeSource);
         editor.putLong(RENEWAL_DATE, renewalDate.getTime());
+        editor.putString(OWNER, photo.owner);
+        editor.putString(TITLE, photo.title);
         editor.commit();
     }
 
@@ -281,14 +286,32 @@ public class MainActivity extends ActionBarActivity {
         // Handle action bar item clicks here. The action bar will
         // automatically handle clicks on the Home/Up button, so long
         // as you specify a parent activity in AndroidManifest.xml.
-        int id = item.getItemId();
-
-        //noinspection SimplifiableIfStatement
-        if (id == R.id.action_settings) {
-            return true;
+        switch( item.getItemId()) {
+            case R.id.action_photo_credits:
+                displayPhotoCredits();
+                return true;
+            case R.id.action_settings:
+                return true;
+            default:
+                return super.onOptionsItemSelected(item);
         }
+    }
 
-        return super.onOptionsItemSelected(item);
+    public void displayPhotoCredits(){
+        String owner = mSharedPreferences.getString(OWNER, "");
+        String title = mSharedPreferences.getString(TITLE, "");
+        AlertDialog alert;
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setMessage(getString(R.string.author) + owner + "\n" + getString(R.string.title) + title)
+                .setTitle(getString(R.string.photo_credits))
+                .setCancelable(false)
+                .setPositiveButton(getString(R.string.close), new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int id) {
+                        dialog.dismiss();
+                    }});
+        alert = builder.create();
+        alert.show();
+        //Toast.makeText(getApplicationContext(), "Owner: " + owner + "\n" + "Title: " + title, Toast.LENGTH_LONG).show();
     }
 
     public void clearPreferences(){

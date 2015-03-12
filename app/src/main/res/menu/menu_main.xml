@@ -2,6 +2,16 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools" tools:context=".MainActivity">
 
-    <item android:id="@+id/action_settings" android:title="@string/action_settings"
-        android:orderInCategory="100" app:showAsAction="never" />
+    <item android:id="@+id/action_photo_credits"
+        android:title="@string/photo_credits"
+        android:orderInCategory="100"
+        app:showAsAction="never" />
+    <item android:id="@+id/action_settings"
+        android:title="@string/settings"
+        android:orderInCategory="200"
+        app:showAsAction="never" />
+    <item android:id="@+id/action_disclaimer"
+        android:title="@string/action_disclaimer"
+        android:orderInCategory="300"
+        app:showAsAction="never" />
 </menu>
