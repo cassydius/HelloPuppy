@@ -26,7 +26,7 @@ public class ReminderService extends BroadcastReceiver {
         long[] vibration_pattern = {0,100,100};
         Uri alarmSound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
         NotificationCompat.Builder mBuilder = new NotificationCompat.Builder(context)
-                    .setSmallIcon(R.mipmap.ic_launcher)
+                    .setSmallIcon(R.mipmap.loulou_notif)
                     .setContentTitle(context.getString(R.string.notification_title))
                     .setContentText(context.getString(R.string.notification_desc))
                     .setAutoCancel(true)
