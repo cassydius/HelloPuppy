@@ -16,9 +16,16 @@
     <string name="close">Close</string>
 
     //Alert dialog
-    <string name="alert_title">Unable to connect</string>
-    <string name="connection_alert">You need a network connection to get a new puppy. Please turn on mobile network or Wi-Fi in Settings.</string>
+    <string name="alert_connection_title">Unable to connect</string>
+    <string name="alert_connection_text">You need a network connection to get a new puppy. Please turn on mobile network or Wi-Fi in Settings.</string>
     <string name="cancel">Cancel</string>
+    <string name="alert_api_title">API Error</string>
+    <string name="api_error_message">Sorry, an API error occured. Please contact support.\n Error description: </string>
+    <string name="api_result_error">No result found. Please try again.</string>
+    <string name="api_format_error">Response format error. Please contact support.</string>
+    <string name="picasso_error_title">Image Error</string>
+    <string name="picasso_error_text">Sorry, an error occured while trying to display image. Please try again.</string>
+    <string name="quit">Quit</string>
 
     //Disclaimer
     <string name="disclaimer_text">All photos are properties of Flickr users, distributed publicly under a Creative Commons license. Photos are collected

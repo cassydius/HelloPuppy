@@ -21,7 +21,6 @@ import android.view.Display;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.ImageView;
-import android.widget.Toast;
 
 import com.loopj.android.http.AsyncHttpClient;
 import com.loopj.android.http.JsonHttpResponseHandler;
@@ -157,8 +156,8 @@ public class MainActivity extends ActionBarActivity {
 
     protected void createNetErrorDialog() {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setMessage(getString(R.string.connection_alert))
-                .setTitle(getString(R.string.alert_title))
+        builder.setMessage(getString(R.string.alert_connection_text))
+                .setTitle(getString(R.string.alert_connection_title))
                 .setCancelable(false)
                 .setPositiveButton(getString(R.string.settings),
                         new DialogInterface.OnClickListener() {
@@ -190,51 +189,60 @@ public class MainActivity extends ActionBarActivity {
         client.get(urlString, new JsonHttpResponseHandler() {
             @Override
             public void onSuccess(JSONObject jsonObject) {
-                //Select a photo and get the correct sources
-                PhotoData photoObj = getPhoto(jsonObject);
-                //Get renewal Date
-                cal.add(Calendar.SECOND, validityTime);
-                Date renewalDate = cal.getTime();
+                Log.d("RESPONSE JSON", jsonObject.toString());
+                if (jsonObject.has("stat") && (jsonObject.optString("stat").contains("fail"))) {
+                    //Throw API error alert
+                    String message = getString(R.string.api_error_message) + jsonObject.optString("message");
+                    displayErrorAlert(getString(R.string.alert_api_title), message);
+                } else {
+                    //Select a photo and get the correct sources
+                    PhotoData photoObj = getPhoto(jsonObject);
+                    //Get renewal Date
+                    cal.add(Calendar.SECOND, validityTime);
+                    Date renewalDate = cal.getTime();
 
-                savePreferences(photoObj, renewalDate);
-                startAlarm(renewalDate);
-                displayPhoto(photoObj.source);
+                    savePreferences(photoObj, renewalDate);
+                    startAlarm(renewalDate);
+                    displayPhoto(photoObj.source);
+                }
             }
 
             @Override
             public void onFailure(int statusCode, Throwable throwable, JSONObject error) {
-                // Display a "Toast" message
-                // to announce the failure
-                Toast.makeText(getApplicationContext(), "Error: " + statusCode + " " + throwable.getMessage(), Toast.LENGTH_LONG).show();
-
-                // Log error message
-                // to help solve any problems
-                Log.e("GET_PHOTO", statusCode + " " + throwable.getMessage());
+                displayErrorAlert(getString(R.string.alert_api_title), throwable.getMessage());
             }
         });
     }
 
     public PhotoData getPhoto(JSONObject PhotosObject){
-
-        JSONObject PhotoObject = PhotosObject.optJSONObject("photos");
-        JSONArray photoList = PhotoObject.optJSONArray("photo");
-
-        Integer position = (int) Math.floor( Math.random() * photoList.length());
-        JSONObject photo = photoList.optJSONObject(position);
-        Log.d("APIRESULT", photo.toString());
-        Iterator<?> keys = photo.keys();
         PhotoData photoObj = new PhotoData(orientation, windowSize.x, windowSize.y);
-        photoObj.setCredits(photo.optString("ownername",""), photo.optString("title",""));
+        try {
+            JSONObject PhotoObject = PhotosObject.optJSONObject("photos");
+            JSONArray photoList = PhotoObject.optJSONArray("photo");
 
-        while( keys.hasNext() ) {
-            String key = (String)keys.next();
-            if (key.startsWith(URL_PREFIX)) {
-                String suffix = key.replace(URL_PREFIX, "");
-                String url = photo.optString(key, "");
-                Integer height = photo.optInt(HEIGHT + suffix, 0);
-                Integer width = photo.optInt(WIDTH + suffix, 0);
-                photoObj.getSources(url, width, height);
+            if (photoList.length() == 0) {
+                displayErrorAlert(getString(R.string.alert_api_title), getString(R.string.api_result_error));
+            } else {
+                Integer position = (int) Math.floor(Math.random() * photoList.length());
+                JSONObject photo = photoList.optJSONObject(position);
+
+                Iterator<?> keys = photo.keys();
+                photoObj.setCredits(photo.optString("ownername", ""), photo.optString("title", ""));
+
+                while (keys.hasNext()) {
+                    String key = (String) keys.next();
+                    if (key.startsWith(URL_PREFIX)) {
+                        String suffix = key.replace(URL_PREFIX, "");
+                        String url = photo.optString(key, "");
+                        Integer height = photo.optInt(HEIGHT + suffix, 0);
+                        Integer width = photo.optInt(WIDTH + suffix, 0);
+                        photoObj.getSources(url, width, height);
+                    }
+                }
             }
+        }
+        catch (NullPointerException jsonError){
+            displayErrorAlert(getString(R.string.alert_api_title), getString(R.string.api_format_error));
         }
         return photoObj;
     }
@@ -269,7 +277,8 @@ public class MainActivity extends ActionBarActivity {
             }
             @Override
             public void onError() {
-                mDialog.dismiss();
+                clearPreferences();
+                displayErrorAlert(getString(R.string.picasso_error_title), getString(R.string.picasso_error_text));
             }
         });
     }
@@ -288,43 +297,47 @@ public class MainActivity extends ActionBarActivity {
         // as you specify a parent activity in AndroidManifest.xml.
         switch( item.getItemId()) {
             case R.id.action_photo_credits:
-                displayPhotoCredits();
+                String owner = mSharedPreferences.getString(OWNER, "");
+                String title = mSharedPreferences.getString(TITLE, "");
+                String message = getString(R.string.author) + owner + "\n\n" + getString(R.string.title) + title;
+                displayInfoAlert(getString(R.string.photo_credits), message);
                 return true;
             case R.id.action_settings:
                 return true;
             case R.id.action_disclaimer:
-                displayDisclaimer();
+                displayInfoAlert(getString(R.string.disclaimer), getString(R.string.disclaimer_text));
             default:
                 return super.onOptionsItemSelected(item);
         }
     }
 
-    public void displayPhotoCredits(){
-        String owner = mSharedPreferences.getString(OWNER, "");
-        String title = mSharedPreferences.getString(TITLE, "");
+    public void displayInfoAlert(String title, String message){
         AlertDialog alert;
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setMessage(getString(R.string.author) + owner + "\n" + getString(R.string.title) + title)
-                .setTitle(getString(R.string.photo_credits))
+        builder.setMessage(message)
+                .setTitle(title)
                 .setCancelable(false)
                 .setPositiveButton(getString(R.string.close), new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int id) {
                         dialog.dismiss();
-                    }});
+                    }
+                });
         alert = builder.create();
         alert.show();
     }
 
-    public void displayDisclaimer(){
+    public void displayErrorAlert(String title, String message){
+        mDialog.dismiss();
         AlertDialog alert;
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setMessage(getString(R.string.disclaimer_text))
-                .setTitle(getString(R.string.disclaimer))
+        builder.setMessage(message)
+                .setTitle(title)
                 .setCancelable(false)
-                .setPositiveButton(getString(R.string.close), new DialogInterface.OnClickListener() {
+                .setPositiveButton(getString(R.string.quit), new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int id) {
-                        dialog.dismiss();
-                    }});
+                        MainActivity.this.finish();
+                    }
+                });
         alert = builder.create();
         alert.show();
     }
