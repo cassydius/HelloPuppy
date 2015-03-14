@@ -313,7 +313,6 @@ public class MainActivity extends ActionBarActivity {
 
     public void displayPhoto(String source){
         Picasso picasso = Picasso.with(this);
-        picasso.setDebugging(true);
         Picasso.with(this).load(source).into(imageMain, new Callback.EmptyCallback(){
             @Override public void onSuccess() {
                 mDialog.dismiss();
