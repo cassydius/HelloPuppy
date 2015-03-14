@@ -14,9 +14,9 @@ import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Build;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.provider.Settings;
 import android.support.v7.app.ActionBarActivity;
-import android.util.Log;
 import android.view.Display;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -44,10 +44,10 @@ public class MainActivity extends ActionBarActivity {
     // API constants
     private static final String API_KEY = "4bc55852a8f873978d26832b8cc4f5aa";
     private static final String LIST_QUERY_URL = "https://api.flickr.com/services/rest/?method=flickr.photos.search";
-    private static final String SUBJECT = "puppy";
+    private static final String SUBJECT = "puppy,dogs";
     private static final String MEDIA_TYPE = "photos";
     private static final String FORMAT = "&format=json&nojsoncallback=?";
-    private static final String PER_PAGE = "10";
+    private static final String PER_PAGE = "100";
     private static final String EXTRAS = "&extras=owner_name,description,url_sq,url_t,url_s,url_q,url_m,url_n,url_z,url_c,url_l,url_o";
 
     // API keys naming convention
@@ -65,10 +65,13 @@ public class MainActivity extends ActionBarActivity {
     private static final String RENEWAL_DATE = "renewalDate";
     private static final String OWNER = "ownername";
     private static final String TITLE = "title";
+    private static final String REFRESH_TIME_PREF = "notification_refresh_time";
+    private static final String NOTIFICATION_NEW_PICTURE = "notifications_new_picture";
     SharedPreferences mSharedPreferences;
 
-    //OTHER CONSTANTS
-    private static final Integer validityTime = 2*60;
+    //Other constants
+    private static final Integer VALIDITY_DAY = 1;
+    private static final String DEFAULT_REFRESH_TIME = "9:00";
 
     ImageView imageMain;
     Point windowSize;
@@ -78,6 +81,7 @@ public class MainActivity extends ActionBarActivity {
     Configuration config;
     ConnectivityManager connecManager;
     Calendar cal;
+    SharedPreferences defaultSharedPrefs;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -108,6 +112,25 @@ public class MainActivity extends ActionBarActivity {
 
         //Set shared preferences
         mSharedPreferences = getSharedPreferences(PREFS, MODE_PRIVATE);
+        defaultSharedPrefs = PreferenceManager.getDefaultSharedPreferences(this);
+        SharedPreferences.OnSharedPreferenceChangeListener  listener = new SharedPreferences.OnSharedPreferenceChangeListener() {
+            public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
+                if (key.equals(REFRESH_TIME_PREF)){
+                    setNotification();
+
+                } else if (key.equals(NOTIFICATION_NEW_PICTURE)){
+                    Boolean notification = sharedPreferences.getBoolean(key, true);
+                    if (notification){
+                        setNotification();
+                    } else {
+                        cancelAlarm();
+                    }
+                }
+
+            }
+        };
+
+        defaultSharedPrefs.registerOnSharedPreferenceChangeListener(listener);
 
         connecManager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
         cal = Calendar.getInstance();
@@ -189,7 +212,6 @@ public class MainActivity extends ActionBarActivity {
         client.get(urlString, new JsonHttpResponseHandler() {
             @Override
             public void onSuccess(JSONObject jsonObject) {
-                Log.d("RESPONSE JSON", jsonObject.toString());
                 if (jsonObject.has("stat") && (jsonObject.optString("stat").contains("fail"))) {
                     //Throw API error alert
                     String message = getString(R.string.api_error_message) + jsonObject.optString("message");
@@ -197,12 +219,8 @@ public class MainActivity extends ActionBarActivity {
                 } else {
                     //Select a photo and get the correct sources
                     PhotoData photoObj = getPhoto(jsonObject);
-                    //Get renewal Date
-                    cal.add(Calendar.SECOND, validityTime);
-                    Date renewalDate = cal.getTime();
-
-                    savePreferences(photoObj, renewalDate);
-                    startAlarm(renewalDate);
+                    setNotification();
+                    savePreferences(photoObj);
                     displayPhoto(photoObj.source);
                 }
             }
@@ -247,14 +265,32 @@ public class MainActivity extends ActionBarActivity {
         return photoObj;
     }
 
-    public void savePreferences(PhotoData photo, Date renewalDate){
+    public void savePreferences(PhotoData photo){
         // Access the device's key-value storage and save sources
         SharedPreferences.Editor editor = mSharedPreferences.edit();
         editor.putString(PORTRAIT_SOURCE, photo.portraitSource);
         editor.putString(LANDSCAPE_SOURCE, photo.landscapeSource);
-        editor.putLong(RENEWAL_DATE, renewalDate.getTime());
         editor.putString(OWNER, photo.owner);
         editor.putString(TITLE, photo.title);
+        editor.commit();
+    }
+
+    private void setNotification(){
+        final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
+        String refreshTime = prefs.getString(REFRESH_TIME_PREF, DEFAULT_REFRESH_TIME);
+        String[] refreshdetails = refreshTime.split(":");
+
+        //Get renewal Date
+        Calendar refreshCalendar = Calendar.getInstance();
+        refreshCalendar.add(Calendar.DATE, VALIDITY_DAY);
+        refreshCalendar.set(Calendar.HOUR_OF_DAY, Integer.parseInt(refreshdetails[0]));
+        refreshCalendar.set(Calendar.MINUTE, Integer.parseInt(refreshdetails[1]));
+        Date renewalDate = refreshCalendar.getTime();
+
+        if (prefs.getBoolean(NOTIFICATION_NEW_PICTURE, true)){startAlarm(renewalDate);}
+
+        SharedPreferences.Editor editor = mSharedPreferences.edit();
+        editor.putLong(RENEWAL_DATE, renewalDate.getTime());
         editor.commit();
     }
 
@@ -266,6 +302,13 @@ public class MainActivity extends ActionBarActivity {
         Intent intent = new Intent(this, ReminderService.class);
         PendingIntent pendingIntent = PendingIntent.getBroadcast(this, 0, intent, 0);
         alarmManager.set(AlarmManager.RTC, when, pendingIntent);
+    }
+
+    private void cancelAlarm(){
+        AlarmManager alarmManager = (AlarmManager) this.getSystemService(Context.ALARM_SERVICE);
+        Intent intent = new Intent(this, ReminderService.class);
+        PendingIntent pendingIntent = PendingIntent.getBroadcast(this, 0, intent, 0);
+        alarmManager.cancel(pendingIntent);
     }
 
     public void displayPhoto(String source){
@@ -303,6 +346,8 @@ public class MainActivity extends ActionBarActivity {
                 displayInfoAlert(getString(R.string.photo_credits), message);
                 return true;
             case R.id.action_settings:
+                Intent intent = new Intent(this, SettingsActivity.class);
+                startActivity(intent);
                 return true;
             case R.id.action_disclaimer:
                 displayInfoAlert(getString(R.string.disclaimer), getString(R.string.disclaimer_text));
