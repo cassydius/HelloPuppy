@@ -198,11 +198,12 @@ public class MainActivity extends ActionBarActivity {
                             }
                         }
                 )
-                .setOnCancelListener(new DialogInterface.OnCancelListener(){
+                .setOnCancelListener(new DialogInterface.OnCancelListener() {
                     @Override
-                    public void onCancel(DialogInterface dialog){
+                    public void onCancel(DialogInterface dialog) {
                         MainActivity.this.finish();
-                    }});
+                    }
+                });
         AlertDialog alert = builder.create();
         alert.show();
     }
@@ -278,7 +279,7 @@ public class MainActivity extends ActionBarActivity {
         editor.putString(LANDSCAPE_SOURCE, photo.landscapeSource);
         editor.putString(OWNER, photo.owner);
         editor.putString(TITLE, photo.title);
-        editor.commit();
+        editor.apply();
     }
 
     private void setNotification(){
@@ -297,7 +298,7 @@ public class MainActivity extends ActionBarActivity {
 
         SharedPreferences.Editor editor = mSharedPreferences.edit();
         editor.putLong(RENEWAL_DATE, renewalDate.getTime());
-        editor.commit();
+        editor.apply();
     }
 
     private void startAlarm(Date renewalDate) {
@@ -371,11 +372,12 @@ public class MainActivity extends ActionBarActivity {
                         dialog.dismiss();
                     }
                 })
-                .setOnCancelListener(new DialogInterface.OnCancelListener(){
+                .setOnCancelListener(new DialogInterface.OnCancelListener() {
                     @Override
-                    public void onCancel(DialogInterface dialog){
+                    public void onCancel(DialogInterface dialog) {
                         dialog.dismiss();
-                    }});
+                    }
+                });
         alert = builder.create();
         alert.show();
     }
@@ -392,17 +394,18 @@ public class MainActivity extends ActionBarActivity {
                         MainActivity.this.finish();
                     }
                 })
-                .setOnCancelListener(new DialogInterface.OnCancelListener(){
+                .setOnCancelListener(new DialogInterface.OnCancelListener() {
                     @Override
-                    public void onCancel(DialogInterface dialog){
+                    public void onCancel(DialogInterface dialog) {
                         MainActivity.this.finish();
-                    }});
+                    }
+                });
         alert = builder.create();
         alert.show();
     }
 
     public void clearPreferences(){
-        mSharedPreferences.edit().clear().commit();
+        mSharedPreferences.edit().clear().apply();
     }
 
     public static void clearCache(Context context) {
