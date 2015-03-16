@@ -42,9 +42,9 @@ public class MainActivity extends ActionBarActivity {
     private static final Boolean FORCE_DOWNLOAD = Boolean.FALSE;
 
     // API constants
-    private static final String API_KEY = "4bc55852a8f873978d26832b8cc4f5aa";
+    private static final String API_KEY = "1e38f39fc6b0c731ec60ac1753325313";
     private static final String LIST_QUERY_URL = "https://api.flickr.com/services/rest/?method=flickr.photos.search";
-    private static final String SUBJECT = "puppy,dogs";
+    private static final String GROUP_ID = "26602919@N00";
     private static final String MEDIA_TYPE = "photos";
     private static final String FORMAT = "&format=json&nojsoncallback=?";
     private static final String PER_PAGE = "100";
@@ -82,6 +82,7 @@ public class MainActivity extends ActionBarActivity {
     ConnectivityManager connecManager;
     Calendar cal;
     SharedPreferences defaultSharedPrefs;
+    SharedPreferences.OnSharedPreferenceChangeListener listener;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -113,7 +114,7 @@ public class MainActivity extends ActionBarActivity {
         //Set shared preferences
         mSharedPreferences = getSharedPreferences(PREFS, MODE_PRIVATE);
         defaultSharedPrefs = PreferenceManager.getDefaultSharedPreferences(this);
-        SharedPreferences.OnSharedPreferenceChangeListener  listener = new SharedPreferences.OnSharedPreferenceChangeListener() {
+        listener = new SharedPreferences.OnSharedPreferenceChangeListener() {
             public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
                 if (key.equals(REFRESH_TIME_PREF)){
                     setNotification();
@@ -206,7 +207,7 @@ public class MainActivity extends ActionBarActivity {
         client = new AsyncHttpClient();
 
         /* TODO GET A RANDOM LIST */
-        String urlString = LIST_QUERY_URL + "&api_key=" + API_KEY + "&media=" + MEDIA_TYPE + "&tags=" + SUBJECT +
+        String urlString = LIST_QUERY_URL + "&api_key=" + API_KEY + "&media=" + MEDIA_TYPE + "&group_id=" + GROUP_ID +
                 "&per_page=" + PER_PAGE + EXTRAS + FORMAT;
 
         client.get(urlString, new JsonHttpResponseHandler() {

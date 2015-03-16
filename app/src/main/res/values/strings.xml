@@ -3,7 +3,7 @@
 
     <string name="hello_world">Hello world!</string>
     <string name="settings">Settings</string>
-    <string name="loading_title">Here it comes</string>
+    <string name="loading_title">The puppy is on his way ...</string>
     //Menu
     <string name="disclaimer">Disclaimer</string>
     <string name="notification_title">Hello Puppy</string>
