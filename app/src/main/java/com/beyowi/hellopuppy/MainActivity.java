@@ -182,7 +182,7 @@ public class MainActivity extends ActionBarActivity {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setMessage(getString(R.string.alert_connection_text))
                 .setTitle(getString(R.string.alert_connection_title))
-                .setCancelable(false)
+                .setCancelable(true)
                 .setPositiveButton(getString(R.string.settings),
                         new DialogInterface.OnClickListener() {
                             public void onClick(DialogInterface dialog, int id) {
@@ -197,7 +197,12 @@ public class MainActivity extends ActionBarActivity {
                                 MainActivity.this.finish();
                             }
                         }
-                );
+                )
+                .setOnCancelListener(new DialogInterface.OnCancelListener(){
+                    @Override
+                    public void onCancel(DialogInterface dialog){
+                        MainActivity.this.finish();
+                    }});
         AlertDialog alert = builder.create();
         alert.show();
     }
@@ -313,7 +318,6 @@ public class MainActivity extends ActionBarActivity {
     }
 
     public void displayPhoto(String source){
-        Picasso picasso = Picasso.with(this);
         Picasso.with(this).load(source).into(imageMain, new Callback.EmptyCallback(){
             @Override public void onSuccess() {
                 mDialog.dismiss();
@@ -361,12 +365,17 @@ public class MainActivity extends ActionBarActivity {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setMessage(message)
                 .setTitle(title)
-                .setCancelable(false)
+                .setCancelable(true)
                 .setPositiveButton(getString(R.string.close), new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int id) {
                         dialog.dismiss();
                     }
-                });
+                })
+                .setOnCancelListener(new DialogInterface.OnCancelListener(){
+                    @Override
+                    public void onCancel(DialogInterface dialog){
+                        dialog.dismiss();
+                    }});
         alert = builder.create();
         alert.show();
     }
@@ -377,12 +386,17 @@ public class MainActivity extends ActionBarActivity {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setMessage(message)
                 .setTitle(title)
-                .setCancelable(false)
+                .setCancelable(true)
                 .setPositiveButton(getString(R.string.quit), new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int id) {
                         MainActivity.this.finish();
                     }
-                });
+                })
+                .setOnCancelListener(new DialogInterface.OnCancelListener(){
+                    @Override
+                    public void onCancel(DialogInterface dialog){
+                        MainActivity.this.finish();
+                    }});
         alert = builder.create();
         alert.show();
     }

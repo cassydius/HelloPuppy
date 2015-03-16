@@ -1,4 +1,5 @@
 apply plugin: 'com.android.application'
+apply plugin: 'testfairy'
 
 android {
     compileSdkVersion 21
@@ -18,6 +19,9 @@ android {
     }
     testOptions.unitTests.returnDefaultValues = true
     productFlavors {
+    }
+    testfairyConfig {
+        apiKey "8896db89a7853ce06248924f60619cb9d2b8c63d"
     }
 }
 
