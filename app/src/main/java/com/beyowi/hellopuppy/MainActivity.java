@@ -347,7 +347,7 @@ public class MainActivity extends ActionBarActivity {
             case R.id.action_photo_credits:
                 String owner = mSharedPreferences.getString(OWNER, "");
                 String title = mSharedPreferences.getString(TITLE, "");
-                String message = getString(R.string.author) + owner + "\n\n" + getString(R.string.title) + title;
+                String message = getString(R.string.author) + owner + "\n" + getString(R.string.title) + title;
                 displayInfoAlert(getString(R.string.photo_credits), message);
                 return true;
             case R.id.action_settings:
