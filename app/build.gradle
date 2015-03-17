@@ -13,7 +13,8 @@ android {
     }
     buildTypes {
         release {
-            minifyEnabled false
+            minifyEnabled true
+            shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
@@ -35,4 +36,5 @@ dependencies {
     compile 'com.squareup.picasso:picasso:2.5.0'
     compile 'com.loopj.android:android-async-http:1.4.4'
     compile 'com.android.support:support-v4:21.0.3'
+    compile 'com.squareup.okhttp:okhttp:2.2.0'
 }
