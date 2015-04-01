@@ -8,8 +8,8 @@ android {
         applicationId "com.beyowi.hellopuppy"
         minSdkVersion 15
         targetSdkVersion 21
-        versionCode 1
-        versionName "1.0"
+        versionCode 2
+        versionName "1.1"
     }
     buildTypes {
         release {
@@ -37,4 +37,5 @@ dependencies {
     compile 'com.loopj.android:android-async-http:1.4.4'
     compile 'com.android.support:support-v4:21.0.3'
     compile 'com.squareup.okhttp:okhttp:2.2.0'
+    compile 'com.google.android.gms:play-services:7.0.0'
 }

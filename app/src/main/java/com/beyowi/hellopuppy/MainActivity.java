@@ -22,6 +22,8 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.ImageView;
 
+import com.google.android.gms.analytics.HitBuilders;
+import com.google.android.gms.analytics.Tracker;
 import com.loopj.android.http.AsyncHttpClient;
 import com.loopj.android.http.JsonHttpResponseHandler;
 import com.squareup.picasso.Callback;
@@ -83,6 +85,7 @@ public class MainActivity extends ActionBarActivity {
     Calendar cal;
     SharedPreferences defaultSharedPrefs;
     SharedPreferences.OnSharedPreferenceChangeListener listener;
+    Tracker tracker;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -111,12 +114,19 @@ public class MainActivity extends ActionBarActivity {
         mDialog.setMessage(getString(R.string.loading_title));
         mDialog.setCancelable(false);
 
+        //Init tracker analytics
+        tracker = ((GlobalApp) this.getApplication()).getTracker(GlobalApp.TrackerName.APP_TRACKER);
+
         //Set shared preferences
         mSharedPreferences = getSharedPreferences(PREFS, MODE_PRIVATE);
         defaultSharedPrefs = PreferenceManager.getDefaultSharedPreferences(this);
         listener = new SharedPreferences.OnSharedPreferenceChangeListener() {
             public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
                 if (key.equals(REFRESH_TIME_PREF)){
+                    //Track requests
+                    tracker.send(new HitBuilders.ScreenViewBuilder()
+                            .setCustomDimension(1,sharedPreferences.getString(key, DEFAULT_REFRESH_TIME))
+                            .build());
                     setNotification();
 
                 } else if (key.equals(NOTIFICATION_NEW_PICTURE)){
@@ -209,6 +219,14 @@ public class MainActivity extends ActionBarActivity {
     }
 
     public void getPhotosList(){
+        //Track requests
+        tracker.send(new HitBuilders.EventBuilder()
+                .setCategory("API Connection")
+                .setAction("Request")
+                .setLabel("Photos list")
+                .setValue(1)
+                .build());
+
         // Create a client to perform networking
         client = new AsyncHttpClient();
 
@@ -220,10 +238,24 @@ public class MainActivity extends ActionBarActivity {
             @Override
             public void onSuccess(JSONObject jsonObject) {
                 if (jsonObject.has("stat") && (jsonObject.optString("stat").contains("fail"))) {
+                    //Track API errors
+                    tracker.send(new HitBuilders.EventBuilder()
+                            .setCategory("API Connection")
+                            .setAction("Get failed")
+                            .setLabel("Photos list")
+                            .setValue(1)
+                            .build());
                     //Throw API error alert
                     String message = getString(R.string.api_error_message) + jsonObject.optString("message");
                     displayErrorAlert(getString(R.string.alert_api_title), message);
                 } else {
+                    //Track success
+                    tracker.send(new HitBuilders.EventBuilder()
+                            .setCategory("API Connection")
+                            .setAction("Get success")
+                            .setLabel("Photos list")
+                            .setValue(1)
+                            .build());
                     //Select a photo and get the correct sources
                     PhotoData photoObj = getPhoto(jsonObject);
                     setNotification();
